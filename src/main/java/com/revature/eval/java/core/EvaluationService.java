@@ -1,11 +1,9 @@
 package com.revature.eval.java.core;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.temporal.ChronoField;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,7 +37,8 @@ public class EvaluationService {
 	 * @return
 	 */
 	public String acronym(String phrase) {
-		// TODO Write an implementation for this method declaration
+		// This breaks the string into tokens along whitespace and dashes, and then returns
+		// a string built from the first letter of each token, capitalized.
 		String[] phraseTokens = phrase.split("\\s|-");
 		StringBuilder acronym = new StringBuilder();
 		for (String s : phraseTokens) {
@@ -98,18 +97,18 @@ public class EvaluationService {
 		}
 
 		public boolean isEquilateral() {
-			// TODO Write an implementation for this method declaration
-			return (sideOne == sideTwo) && (sideTwo == sideThree) && (sideOne == sideThree);
+			// Returns true if all three sides are the same.
+			return (sideOne == sideTwo) && (sideTwo == sideThree);
 		}
 
 		public boolean isIsosceles() {
-			// TODO Write an implementation for this method declaration
+			// Returns true if any pair among the three sides are the same.
 			return (sideOne == sideTwo) || (sideTwo == sideThree) || (sideOne == sideThree);
 		}
 
 		public boolean isScalene() {
-			// TODO Write an implementation for this method declaration
-			return (sideOne != sideTwo) && (sideTwo != sideThree) && (sideOne != sideThree);
+			// Returns true if not equilateral or isosceles.
+			return !this.isEquilateral() && !this.isIsosceles();
 		}
 
 	}
@@ -130,7 +129,9 @@ public class EvaluationService {
 	 * @return
 	 */
 	public int getScrabbleScore(String string) {
-		// TODO Write an implementation for this method declaration
+		// Uses a helper function to calculate the value of each letter in the string,
+		// and then they are summed up here. Throws an IllegalArgumentException if the
+		// string has a non-letter char.
 		char[] cString = string.toLowerCase().toCharArray();
 		int score = 0;
 		for (char c : cString) {
@@ -176,7 +177,7 @@ public class EvaluationService {
 		case 'z':
 			return 10;
 		default:
-			return 0;
+			throw new IllegalArgumentException();
 		}
 	}
 
@@ -212,15 +213,18 @@ public class EvaluationService {
 	 * NANP-countries, only 1 is considered a valid country code.
 	 */
 	public String cleanPhoneNumber(String string) {
-		// TODO Write an implementation for this method declaration
+		// Turn the string into a charArray to make it iterable, go through
+		// all the chars, and builds a new string based just on the number
+		// of digits. If the first digit is a 1, it is then truncated. If
+		// there is not 10 digits by the end of this, an
+		// IllegalArgumentException is thrown, but otherwise the string is
+		// returned.
 		char[] cString = string.toCharArray();
 		StringBuilder cleanNumber = new StringBuilder();
 
 		for (char c : cString)
 			if (Character.isDigit(c))
 				cleanNumber.append(c);
-
-		// fix later
 
 		if (cleanNumber.charAt(0) == 1)
 			cleanNumber.deleteCharAt(0);
@@ -241,12 +245,13 @@ public class EvaluationService {
 	 * @return
 	 */
 	public Map<String, Integer> wordCount(String string) {
-		// TODO Write an implementation for this method declaration
+		// We break the string by things that aren't words, and then iterate through
+		// the tokens, inserting them if they aren't already there and increasing their
+		// value if they are.
 
 		Map<String, Integer> wcMap = new HashMap<String, Integer>();
 
-		// fix split matcher later
-		String[] stringTokens = string.split("[\\s\n,]+");
+		String[] stringTokens = string.split("[^a-zA-Z]+");
 		for (String s : stringTokens) {
 			if (wcMap.containsKey(s)) {
 				wcMap.put(s, wcMap.get(s) + 1);
@@ -297,20 +302,76 @@ public class EvaluationService {
 		private List<T> sortedList;
 
 		public int indexOf(T t) {
-			// TODO Write an implementation for this method declaration
+			// Using the unit tests as a guideline, we attempt to parse the provided list
+			// and t as numbers,
+			// either as longs or doubles. If neither work, an illegal argument is thrown,
+			// but otherwise,
+			// the list and value, converted to the appropriate numeric type, is thrown to a
+			// recursive helper
+			// function. The function examines the value at the middle of a range. If it is
+			// greater than t,
+			// we recurse with the new range being the left half; if it is less than t we
+			// recurse with the
+			// right half, and if the midpoint matches t we return the midpoint. If we
+			// arrive at the point
+			// where our range is a single number, we return -1 if it does not match t and
+			// return it if it does.
+
 			int len = sortedList.size();
 
-			return indexOfR(t, 0, len - 1);
+			try {
+				Long longT = Long.parseLong(t.toString());
+				List<Long> sortedLongList = new ArrayList<Long>();
+				for (T val : sortedList) {
+					sortedLongList.add(Long.parseLong(val.toString()));
+				}
+				return indexOfR(sortedLongList, longT, 0, len - 1);
+			} catch (NumberFormatException e) {
+				try {
+					Double doubleT = Double.parseDouble(t.toString());
+					List<Double> sortedDoubleList = new ArrayList<Double>();
+					for (T val : sortedList) {
+						sortedDoubleList.add(Double.parseDouble(val.toString()));
+					}
+					return indexOfR(sortedDoubleList, doubleT, 0, len - 1);
+				} catch (NumberFormatException f) {
+					throw new IllegalArgumentException(
+							"Inputted list or value cannot be parsed as a double or a long.");
+				}
+			}
 		}
 
-		private int indexOfR(T t, int start, int end) {
+		private int indexOfR(List<Long> sortedLongList, Long t, int start, int end) {
+
+			int mid = (start + end) / 2;
+			Long midVal = sortedLongList.get(mid);
 
 			if (start == end)
-				return -1;
+				return ((midVal.equals(t)) ? mid : -1);
+
+			if (midVal < t)
+				return indexOfR(sortedLongList, t, mid + 1, end);
+			else if (midVal > t)
+				return indexOfR(sortedLongList, t, start, mid - 1);
+			else
+				return mid;
+		}
+
+		private int indexOfR(List<Double> sortedDoubleList, Double t, int start, int end) {
 
 			int mid = (start + end) / 2;
 
-			return mid;
+			Double midVal = sortedDoubleList.get(mid);
+
+			if (start == end)
+				return ((midVal == t) ? mid : -1);
+
+			if (midVal < t)
+				return indexOfR(sortedDoubleList, t, mid + 1, end);
+			else if (midVal > t)
+				return indexOfR(sortedDoubleList, t, start, mid - 1);
+			else
+				return mid;
 		}
 
 		public BinarySearch(List<T> sortedList) {
@@ -346,7 +407,8 @@ public class EvaluationService {
 	 * @return
 	 */
 	public String toPigLatin(String string) {
-		// TODO Write an implementation for this method declaration
+		// We break the string by whitespace, and then turn convert each word into
+		// pig latin, and then join them back together.
 
 		String[] stringTokens = string.split("\\s");
 		ArrayList<String> plTokens = new ArrayList<String>();
@@ -359,6 +421,9 @@ public class EvaluationService {
 	}
 
 	private static String pigify(String string) {
+		// We use a second helper function to figure out where the first consonant sound
+		// is located
+		// in the word, and then tack it on at the end with an "ay" sound.
 		int cut = cutOff(string);
 
 		String consSound = string.substring(0, cut);
@@ -368,6 +433,11 @@ public class EvaluationService {
 	}
 
 	private static int cutOff(String string) {
+		// If the first letter is a vowel, we return the word. Otherwise if the first
+		// two letters are 'qu',
+		// we return just that. If that's not the case, we iterate through the string
+		// until we find a vowel or
+		// a 'y' (which is a vowel when in the middle of a word).
 		if (isVowel(string.charAt(0)))
 			return 0;
 		else if (string.length() >= 2 && (string.charAt(0)) == 'q' && (string.charAt(1) == 'u')) {
@@ -375,11 +445,11 @@ public class EvaluationService {
 		}
 
 		else {
-			int length = 1;
-			while (length < string.length() && !isVowel(string.charAt(length)) && (string.charAt(length) != 'y')) {
-				length++;
+			int cut = 1;
+			while (cut < string.length() && !(isVowel(string.charAt(cut)) || string.charAt(cut) == 'y')) {
+				cut++;
 			}
-			return length;
+			return cut;
 		}
 	}
 
@@ -412,13 +482,18 @@ public class EvaluationService {
 	 * @return
 	 */
 	public boolean isArmstrongNumber(int input) {
-		// TODO Write an implementation for this method declaration
+		// We iterate through the value by repeated division by 10. We first calculate
+		// the length of the input, and then we loop again, iterating through the digits
+		// by modding by 10, and then summing them up after
 
-		String strInput = String.valueOf(input);
-		int power = strInput.length();
+		int power = 0;
+		for (int i = input; i != 0; i /= 10) {
+			power++;
+		}
+
 		int sum = 0;
-		for (int i = 0; i < strInput.length(); i++) {
-			sum += Math.pow(Character.getNumericValue(strInput.charAt(i)), power);
+		for (int i = input; i != 0; i /= 10) {
+			sum += Math.pow(i % 10, power);
 		}
 
 		return (sum == input);
@@ -435,24 +510,35 @@ public class EvaluationService {
 	 * @return
 	 */
 	public List<Long> calculatePrimeFactorsOf(long l) {
-		// TODO Write an implementation for this method declaration
+		// We continuously divide the value by primes until we hit 1. We use a memoized list of primes
+		// in order to save some calculation time. We iterate through this list, and if the prime is
+		// a proper divisor, we do the division, otherwise we increase the index. We do not increase the
+		// index in both cases because a number can be a factor multiple times.
+
 		List<Long> factors = new ArrayList<Long>();
-		long div = 2L;
+		int divIndex = 0;
 		while (l != 1) {
+			if (divIndex > memoizedPrimes.size() - 1)
+				addMemoPrime();
+			long div = memoizedPrimes.get(divIndex);
 			if (isPrime(div) && (l % div == 0)) {
 				l /= div;
 				factors.add(new Long(div));
 			} else
-				div++;
+				divIndex++;
 		}
 
 		return factors;
 	}
-
+	
+	
 	private static boolean isPrime(long l) {
+	//This is a helper function that checks if a number is prime or not. We only need to
+	// go up to sqrt of the inputted value because if a number greater than that was a factor,
+	//it must've been multiplied by a nummber less than the sqrt.
 		if (l == 1)
 			return false;
-		for (int i = 2; Math.pow(i, 2) <= l; i++)
+		for (int i = 2; i <= ((int) Math.sqrt(l)); i++)
 			if ((l % i) == 0)
 				return false;
 		return true;
@@ -495,8 +581,10 @@ public class EvaluationService {
 		}
 
 		public String rotate(String string) {
-			// TODO Write an implementation for this method declaration
-
+			// We take the input string, and iterate it by character. We find it in the letter string,
+			// and we rotate it by adding the key value twice (because we use both upper and lowercase in
+			//this string) and modding by 52 (making it circular).
+			
 			StringBuilder rotString = new StringBuilder();
 			char[] cString = string.toCharArray();
 			for (char c : cString) {
@@ -523,35 +611,33 @@ public class EvaluationService {
 	 * @return
 	 */
 
-	private static Vector<Integer> memoizedPrimes = new Vector<Integer>();
+	private static Vector<Long> memoizedPrimes = new Vector<Long>();
+	//Helper array that collects primes. We use a Vector because I think JUnit does some
+	//stuff with synchronization.
+	
+	private static void addMemoPrime() {
+		//Adds a prime to the memoized prime list.
+		long currentLong = (memoizedPrimes.isEmpty() ? 2 : memoizedPrimes.lastElement() + 1);
+		while (!isPrime(currentLong))
+			currentLong++;
+		memoizedPrimes.add(new Long(currentLong));
+	}
 
 	public int calculateNthPrime(int i) {
-		// TODO Write an implementation for this method declaration
-		if (i < 1)
+		// Basically this function works by generating more primes into memoizedPrimes until we hit
+		// the desired number of prime. But if it's already in memoizedPrimes we just grab it directly.
+		
+		int index = i - 1;
+		if (index < 0)
 			throw new IllegalArgumentException();
 
-		Vector<Integer> memoCopy = new Vector<Integer>();
-		for (Integer j : memoizedPrimes)
-			memoCopy.add(j);
-
-		if (i < memoCopy.size())
-			return memoCopy.get(i - 1);
+		if (index < memoizedPrimes.size())
+			return memoizedPrimes.get(index).intValue();
 		else {
-			int currentInt;
-			if (memoCopy.size() == 0)
-				currentInt = 2;
-			else
-				currentInt = memoCopy.lastElement() + 1;
-			while (memoCopy.size() < i) {
-				if (isPrime(currentInt))
-					memoCopy.add(new Integer(currentInt));
-				currentInt++;
+			while (memoizedPrimes.size() < i) {
+				addMemoPrime();
 			}
-
-			if (memoCopy.size() > memoizedPrimes.size())
-				memoizedPrimes = memoCopy;
-
-			return memoCopy.get(i - 1);
+			return memoizedPrimes.get(index).intValue();
 		}
 	}
 
@@ -588,18 +674,14 @@ public class EvaluationService {
 		 * @return
 		 */
 
-		// private static final String capPlain = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-		// private static final String capEncode = (new
-		// StringBuilder(capPlain)).reverse().toString();
-		// private static final String lowerPlain = "abcdefghijklmnopqrstuvwxyz";
-		// private static final String lowerEncode = (new
-		// StringBuilder(lowerPlain)).reverse().toString();
-
 		private static final String letterEncode = "abcdefghijklmnopqrstuvwxyz";
 
 		public static String encode(String string) {
-			// TODO Write an implementation for this method declaration
-
+			// We iterate through it as a chararray after making it lowercase. For letters we find its
+			// index in letterEncode, and then searching the value at 25 - index to get  its inverse. 
+			// For numbers we leave them as is, and everything else is thrown out. Every five characters 
+			// we add a space. We trim at the end in case an extra space was added.
+			
 			StringBuilder encodedString = new StringBuilder();
 
 			char[] cString = string.toLowerCase().toCharArray();
@@ -628,7 +710,9 @@ public class EvaluationService {
 		 * @return
 		 */
 		public static String decode(String string) {
-			// TODO Write an implementation for this method declaration
+			// We iterate through the string, reversing the letters and leaving the numbers alone, and
+			// dumping whitespace.
+			
 			StringBuilder decodedString = new StringBuilder();
 
 			char[] cString = string.toCharArray();
@@ -702,7 +786,8 @@ public class EvaluationService {
 	private static char[] allLetters = "abcdefghijklmnopqrstuvwxyz".toCharArray();
 
 	public boolean isPangram(String string) {
-		// TODO Write an implementation for this method declaration
+		// We iterate through the string, and add each letter into a map. We then check if in the end,
+		// every letter showed up. If they all did, return true, otherwise return false.
 
 		Map<Character, Integer> letterCount = new HashMap<Character, Integer>();
 
@@ -731,10 +816,19 @@ public class EvaluationService {
 	 * @return
 	 */
 	public Temporal getGigasecondDate(Temporal given) {
-		// TODO Write an implementation for this method declaration
-		
-		LocalDateTime now = LocalDateTime.now();
-		return now.plus(1000000000, ChronoUnit.SECONDS);
+		// We look at each field in LocalDateTime and put them in if they are in the provided temporal. If 
+		// they are not in there we leave them at 0. We then form a new LocalDateTime just by filling out
+		// the field.
+
+		int year = given.isSupported(ChronoField.YEAR) ? given.get(ChronoField.YEAR) : 0;
+		int month = given.isSupported(ChronoField.MONTH_OF_YEAR) ? given.get(ChronoField.MONTH_OF_YEAR) : 0;
+		int dayOfMonth = given.isSupported(ChronoField.DAY_OF_MONTH) ? given.get(ChronoField.DAY_OF_MONTH) : 0;
+		int hour = given.isSupported(ChronoField.HOUR_OF_DAY) ? given.get(ChronoField.HOUR_OF_DAY) : 0;
+		int minute = given.isSupported(ChronoField.MINUTE_OF_HOUR) ? given.get(ChronoField.MINUTE_OF_HOUR) : 0;
+		int second = given.isSupported(ChronoField.SECOND_OF_MINUTE) ? given.get(ChronoField.SECOND_OF_MINUTE) : 0;
+		int nanoOfSecond = given.isSupported(ChronoField.NANO_OF_SECOND) ? given.get(ChronoField.NANO_OF_SECOND) : 0;
+
+		return LocalDateTime.of(year, month, dayOfMonth, hour, minute, second, nanoOfSecond).plusSeconds(1000000000);
 	}
 
 	/**
@@ -751,19 +845,20 @@ public class EvaluationService {
 	 * @return
 	 */
 	public int getSumOfMultiples(int i, int[] set) {
-		// TODO Write an implementation for this method declaration
-		
+		// We form a new set, made by iterating through the given set, and adding in multiples
+		// until we hit i.
+
 		Set<Integer> setOfMults = new HashSet<Integer>();
-		
-		for (int n: set)
-			for (int j = 1; j*n < i; j++)
-				setOfMults.add(j*n);
-		
+
+		for (int n : set)
+			for (int j = 1; j * n < i; j++)
+				setOfMults.add(j * n);
+
 		int sum = 0;
-		
-		for (Integer n: setOfMults)
+
+		for (Integer n : setOfMults)
 			sum += n;
-		
+
 		return sum;
 	}
 
@@ -804,14 +899,17 @@ public class EvaluationService {
 	 * @return
 	 */
 	public boolean isLuhnValid(String string) {
-		// TODO Write an implementation for this method declaration
-		
-		String noSpaceReversed = (new StringBuilder (String.join("", string.split(" ")))).reverse().toString();
+		// We iterate through the string, first filtering out whitespace and reversing so we count correctly
+		// for every other starting from the right. If there are nondigit character, we return false. Otherwise 
+		// we perform the algorithm of doubling every other value, subtracting nine when needed, and checking
+		// if this is a multiple of 10.
+
+		String noSpaceReversed = (new StringBuilder(String.join("", string.split("\\s")))).reverse().toString();
 		if (noSpaceReversed.length() <= 1)
 			return false;
-		
+
 		int sum = 0;
-		
+
 		for (int i = 0; i < noSpaceReversed.length(); i++) {
 			char c = noSpaceReversed.charAt(i);
 			if (!Character.isDigit(c))
@@ -820,7 +918,7 @@ public class EvaluationService {
 			if ((i % 2 == 0))
 				sum += num;
 			else
-				sum += ((num*2 > 9) ? num*2 - 9 : num*2);
+				sum += ((num * 2 > 9) ? num * 2 - 9 : num * 2);
 		}
 		return (sum % 10 == 0);
 	}
@@ -854,13 +952,18 @@ public class EvaluationService {
 	 */
 	public int solveWordProblem(String string) {
 		// TODO Write an implementation for this method declaration
-		String[] stringTokens = string.split("[\\s|?]");
+
+		// We reak up the string by whitespace, and also removing the ? at the end.
+		// We then grab the numbers, which are the 3rd and last tokens, and then perform the
+		// operation indicated by the 4th word.
 		
+		String[] stringTokens = string.split("[\\s|?]");
+
 		int num1 = Integer.parseInt(stringTokens[2]);
 		int num2 = Integer.parseInt(stringTokens[stringTokens.length - 1]);
 		String operation = stringTokens[3];
-		
-		switch(operation) {
+
+		switch (operation) {
 		case "plus":
 			return num1 + num2;
 		case "minus":
